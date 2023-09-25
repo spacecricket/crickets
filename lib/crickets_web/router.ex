@@ -58,7 +58,7 @@ defmodule CricketsWeb.Router do
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
     end
 
-    post "/users/log_in", UserSessionController, :create
+    post "/users/log_in", UserSessionControzller, :create
   end
 
   scope "/", CricketsWeb do
@@ -86,7 +86,10 @@ defmodule CricketsWeb.Router do
   scope "/", CricketsWeb do
     pipe_through [:browser, :require_authenticated_user]
 
-    live "/chat", ChatLive
+    live_session :chat,
+      on_mount: [{CricketsWeb.UserAuth, :mount_current_user}] do
+      live "/chat", ChatLive
+    end
   end
 
 end
