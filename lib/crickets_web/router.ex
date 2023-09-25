@@ -21,7 +21,6 @@ defmodule CricketsWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
-    live "/chat", ChatLive
   end
 
   # Other scopes may use custom stacks.
@@ -83,4 +82,11 @@ defmodule CricketsWeb.Router do
       live "/users/confirm", UserConfirmationInstructionsLive, :new
     end
   end
+
+  scope "/", CricketsWeb do
+    pipe_through [:browser, :require_authenticated_user]
+
+    live "/chat", ChatLive
+  end
+
 end
