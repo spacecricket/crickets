@@ -14,6 +14,10 @@ defmodule CricketsWeb.ChatLive do
   def render(assigns) do
     ~H"""
     <div>hi <%= @current_user.email %>!</div>
+    <div class="flex">
+      <div>Friends List</div>
+      <div>Chat Box</div>
+    </div>
     """
   end
 
