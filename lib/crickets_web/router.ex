@@ -58,7 +58,7 @@ defmodule CricketsWeb.Router do
       live "/users/reset_password/:token", UserResetPasswordLive, :edit
     end
 
-    post "/users/log_in", UserSessionControzller, :create
+    post "/users/log_in", UserSessionController, :create
   end
 
   scope "/", CricketsWeb do

@@ -1,7 +1,7 @@
 defmodule CricketsWeb.ChatLive do
   use CricketsWeb, :live_view
 
-  def mount(params, session, socket) do
+  def mount(_params, _session, socket) do
     # IO.puts("------------------------")
     # IO.inspect(params)
     # IO.inspect(session)
@@ -15,8 +15,16 @@ defmodule CricketsWeb.ChatLive do
     ~H"""
     <div>hi <%= @current_user.email %>!</div>
     <div class="flex">
-      <div>Friends List</div>
-      <div>Chat Box</div>
+      <div>
+      <ol>
+        <li>Coffee</li>
+        <li>Tea</li>
+        <li>Milk</li>
+      </ol>
+      </div>
+      <div>
+
+      </div>
     </div>
     """
   end
