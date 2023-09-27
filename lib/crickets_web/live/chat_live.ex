@@ -15,6 +15,7 @@ defmodule CricketsWeb.ChatLive do
   end
 
   def render(assigns) do
+    # TODO - get Presence working. Then add online friends to friends-container. When you click on a friend, change context to him/her.
     ~H"""
     <%!-- <div>hi <%= @current_user.email %>!</div> --%>
     <%!-- Main container --%>
@@ -58,10 +59,14 @@ defmodule CricketsWeb.ChatLive do
       :at => DateTime.utc_now()
     }
 
+    # TODO write to socket.assigns[:chats][socket.assigns[:to]]
+    # TODO broadcast to socket.assigns[:to] instead
     CricketsWeb.Endpoint.broadcast!(socket.assigns[:me], "new_msg", Jason.encode!(chat_message))
 
     {:noreply, socket}
   end
+
+  # TODO add handle_event to update socket.assigns[:to]
 
   def handle_info(%Phoenix.Socket.Broadcast{topic: _topic, event: "new_msg", payload: payload}, socket) do
     chat_message = Jason.decode!(payload)
