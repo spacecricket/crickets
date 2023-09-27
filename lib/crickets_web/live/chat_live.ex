@@ -1,27 +1,48 @@
 defmodule CricketsWeb.ChatLive do
   use CricketsWeb, :live_view
+
   alias Crickets.ChatMessage
+  alias CricketsWeb.Presence
+
+  # Topic to track which users are online
+  @online_users_presence_topic "crickets:online_users_presence_topic"
 
   def mount(_params, _session, socket) do
-    socket = assign(socket, :me, socket.assigns.current_user.email)
+    me = socket.assigns.current_user.email
 
-    # This will contain a map of email: ChatMessages
-    socket = assign(socket, :chats, %{})
+    # Track me so that my friends can see when I'm online.
+    Presence.track(
+      self(),
+      @online_users_presence_topic,
+      me,
+      %{}
+    )
 
-    # Only interested in messages directed at me
-    CricketsWeb.Endpoint.subscribe(socket.assigns[:me])
+    # Interested in messages directed at me. Each user has a topic named after his/her email.
+    CricketsWeb.Endpoint.subscribe(me)
+    # Interested in getting updates about which of my friends are online.
+    CricketsWeb.Endpoint.subscribe(@online_users_presence_topic)
 
-    {:ok, socket}
-  end
+    {
+      :ok,
+      socket
+      |> assign(:me, me)
+      |> assign(:chats, %{}) # no chat history to start with
+      |> assign(:friends, Presence.list(@online_users_presence_topic)) # TODO narrow to friends
+    }  end
 
   def render(assigns) do
-    # TODO - get Presence working. Then add online friends to friends-container. When you click on a friend, change context to him/her.
+    # TODO - When you click on a friend, change context to him/her.
     ~H"""
-    <%!-- <div>hi <%= @current_user.email %>!</div> --%>
     <%!-- Main container --%>
     <div class="chat-container">
       <%!-- Friends --%>
       <div class="friends-container">
+        <%= for friend <- Map.keys(@friends) do %>
+          <p>
+            <%=friend%>
+          </p>
+        <% end %>
       </div>
       <%!-- Message Header --%>
       <div class="msg-container">
@@ -43,7 +64,6 @@ defmodule CricketsWeb.ChatLive do
         <div class="msg-input-container">
           <form phx-submit="new-message-submitted">
             <textarea name="messageInput" />
-            <%!-- One can either hit ENTER in the above text input or click the below button. --%>
             <button type="submit">Go</button>
           </form>
         </div>
@@ -68,22 +88,41 @@ defmodule CricketsWeb.ChatLive do
 
   # TODO add handle_event to update socket.assigns[:to]
 
-  def handle_info(%Phoenix.Socket.Broadcast{topic: _topic, event: "new_msg", payload: payload}, socket) do
+  def handle_info(%Phoenix.Socket.Broadcast{event: "new_msg", payload: payload}, socket) do
     chat_message = Jason.decode!(payload)
 
     from = chat_message["from"]
 
-    existing_chats = socket.assigns[:chats]
-
-    chats = if Map.has_key?(existing_chats, from) do
-      Map.put(existing_chats, from, [chat_message | Map.get(existing_chats, from)])
+    chats = if Map.has_key?(socket.assigns.chats, from) do
+      Map.put(socket.assigns.chats, from, [chat_message | Map.get(socket.assigns.chats, from)])
     else
-      Map.put(existing_chats, from, [chat_message])
+      Map.put(socket.assigns.chats, from, [chat_message])
     end
 
     socket = update(socket, :chats, fn _ -> chats end)
 
-    # IO.inspect(socket)
     {:noreply, socket}
   end
+
+  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff", payload: diff}, socket) do
+    {
+      :noreply,
+      socket
+      |> handle_leaves(diff.leaves)
+      |> handle_joins(diff.joins)
+    }
+  end
+
+  defp handle_joins(socket, joins) do
+    Enum.reduce(joins, socket, fn {user, %{metas: [meta| _]}}, socket ->
+      assign(socket, :friends, Map.put(socket.assigns.friends, user, meta))
+    end)
+  end
+
+  defp handle_leaves(socket, leaves) do
+    Enum.reduce(leaves, socket, fn {user, _}, socket ->
+      assign(socket, :friends, Map.delete(socket.assigns.friends, user))
+    end)
+  end
+
 end

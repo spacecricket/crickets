@@ -14,6 +14,8 @@ defmodule Crickets.Application do
       Crickets.Repo,
       # Start the PubSub system
       {Phoenix.PubSub, name: Crickets.PubSub},
+      # Presense tracker
+      CricketsWeb.Presence,
       # Start Finch
       {Finch, name: Crickets.Finch},
       # Start the Endpoint (http/https)
