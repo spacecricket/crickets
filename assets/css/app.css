@@ -100,8 +100,8 @@
 
 .latest-message {
     font-weight: 700;
-    border: 1px dashed whitesmoke;
-    background-color: white;
+    border: 1px dotted white;
+    background-color: #fafafa;
 }
 
 .msg-input-container {
