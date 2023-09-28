@@ -102,17 +102,19 @@ defmodule CricketsWeb.ChatLive do
         >
           <%= if @chats && @chats[@currently_chatting_with] do %>
             <%= for {chat, i} <- Enum.with_index(@chats[@currently_chatting_with]) do %>
-              <p
-                class={"#{if(chat.from == @me, do: "my-message", else: "friends-message")}"}
-                style={"opacity: #{1.0 - i * 0.1}"}
-              >
-                <%!-- <%=if(chat.from != @me, do: chat.from <> ": ")%> --%>
+              <%= if i < 20 do %>
+                <p
+                  class={"#{if(chat.from == @me, do: "my-message", else: "friends-message")} #{if(i == 0, do: "latest-message")}"}
+                  style={"opacity: #{1.0 - i * 0.05}"}
+                >
+                  <%!-- <%=if(chat.from != @me, do: chat.from <> ": ")%> --%>
 
-                <%= for part <- String.split(chat.message, "\n") do %>
-                  <%= part %>
-                  <br />
-                <% end %>
-              </p>
+                  <%= for part <- String.split(chat.message, "\n") do %>
+                    <%= part %>
+                    <br />
+                  <% end %>
+                </p>
+              <% end %>
             <% end %>
           <% end %>
         </div>
@@ -121,8 +123,8 @@ defmodule CricketsWeb.ChatLive do
     """
   end
 
-  def handle_event("send-message", %{"ctrlKey" => ctrlKey, "value" => message}, socket) do
-    if !ctrlKey do
+  def handle_event("send-message", %{"shiftKey" => isShiftKeyPressed, "value" => message}, socket) do
+    if !isShiftKeyPressed do
       chat_message = %ChatMessage{
         :from => socket.assigns.me,
         :to => socket.assigns.currently_chatting_with,

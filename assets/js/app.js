@@ -39,7 +39,8 @@ let liveSocket = new LiveSocket(
         metadata: {
             keydown: (event, element) => {
                 return {
-                    ctrlKey: event.ctrlKey
+                    shiftKey: event.shiftKey
+                    // metaKey: event.metaKey
                 }
             }
         },

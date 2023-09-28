@@ -98,6 +98,12 @@
     font-size: x-large;
 }
 
+.latest-message {
+    font-weight: 700;
+    border: 1px dashed whitesmoke;
+    background-color: white;
+}
+
 .msg-input-container {
     height: 100px;
     width: 100%;
