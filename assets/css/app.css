@@ -119,3 +119,7 @@
 .msg-input:focus {
     background-color: white;
 }
+
+.shredder {
+    align-self: center;
+}
