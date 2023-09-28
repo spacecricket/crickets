@@ -132,7 +132,6 @@ defmodule CricketsWeb.ChatLive do
         :at => DateTime.utc_now()
       }
 
-      IO.inspect(chat_message)
       CricketsWeb.Endpoint.broadcast!(
         chat_message.to,
         "new_msg",
