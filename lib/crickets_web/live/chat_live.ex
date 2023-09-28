@@ -73,8 +73,8 @@ defmodule CricketsWeb.ChatLive do
           <% end %>
         <% end %>
       </div>
-      <%!-- Message Header --%>
       <div class="msg-container">
+        <%!-- Message Header --%>
         <%!-- Who you're talking to --%>
         <div
           class={"#{if(@currently_chatting_with, do: "msg-header", else: "msg-header-inactive")}"}
@@ -85,21 +85,6 @@ defmodule CricketsWeb.ChatLive do
             Select a friend to chat with.
           <% end %>
         </div>
-        <%!-- Conversations --%>
-        <div
-          class={"#{if(@currently_chatting_with, do: "msg-page", else: "msg-page-inactive")}"}
-        >
-          <%= if @chats && @chats[@currently_chatting_with] do %>
-            <%= for chat <- @chats[@currently_chatting_with] do %>
-              <p
-                class={"#{if(chat.from == @me, do: "my-message", else: "friends-message")}"}
-              >
-                <%=if(chat.from == @me, do: "me", else: chat.from)%>:
-                <%=chat.message%>
-              </p>
-            <% end %>
-          <% end %>
-        </div>
         <%!-- Message input --%>
         <div class="msg-input-container">
             <textarea
@@ -108,15 +93,36 @@ defmodule CricketsWeb.ChatLive do
               class="msg-input"
               phx-keydown="send-message"
               phx-key="Enter"
+              phx-hook="Focus"
             />
+        </div>
+        <%!-- Conversations --%>
+        <div
+          class={"#{if(@currently_chatting_with, do: "msg-page", else: "msg-page-inactive")}"}
+        >
+          <%= if @chats && @chats[@currently_chatting_with] do %>
+            <%= for {chat, i} <- Enum.with_index(@chats[@currently_chatting_with]) do %>
+              <p
+                class={"#{if(chat.from == @me, do: "my-message", else: "friends-message")}"}
+                style={"opacity: #{1.0 - i * 0.1}"}
+              >
+                <%!-- <%=if(chat.from != @me, do: chat.from <> ": ")%> --%>
+
+                <%= for part <- String.split(chat.message, "\n") do %>
+                  <%= part %>
+                  <br />
+                <% end %>
+              </p>
+            <% end %>
+          <% end %>
         </div>
       </div>
     </div>
     """
   end
 
-  def handle_event("send-message", %{"ctrlKey" => ctrlKey, "metaKey" => metaKey, "value" => message}, socket) do
-    if ctrlKey || metaKey do
+  def handle_event("send-message", %{"ctrlKey" => ctrlKey, "value" => message}, socket) do
+    if !ctrlKey do
       chat_message = %ChatMessage{
         :from => socket.assigns.me,
         :to => socket.assigns.currently_chatting_with,
@@ -124,20 +130,28 @@ defmodule CricketsWeb.ChatLive do
         :at => DateTime.utc_now()
       }
 
+      IO.inspect(chat_message)
+      CricketsWeb.Endpoint.broadcast!(
+        chat_message.to,
+        "new_msg",
+        Jason.encode!(chat_message)
+      )
+
       if chat_message.from != chat_message.to do
-        CricketsWeb.Endpoint.broadcast!(
-          chat_message.to,
-          "new_msg",
-          Jason.encode!(chat_message)
-        )
+        {
+          :noreply,
+          socket
+          |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
+          |> handle_new_chat_message(chat_message)
+        }
+      else
+        {
+          :noreply,
+          socket
+          |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
+        }
       end
 
-      {
-        :noreply,
-        socket
-        |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
-        |> handle_new_chat_message(chat_message)
-      }
     else
       {:noreply, socket}
     end

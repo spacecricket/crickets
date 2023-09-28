@@ -23,6 +23,14 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+let Hooks = {}
+Hooks.Focus = {
+  mounted() {
+    this.el.focus();
+  }
+}
+
 let liveSocket = new LiveSocket(
     "/live", 
     Socket, 
@@ -31,11 +39,11 @@ let liveSocket = new LiveSocket(
         metadata: {
             keydown: (event, element) => {
                 return {
-                    ctrlKey: event.ctrlKey,
-                    metaKey: event.metaKey
+                    ctrlKey: event.ctrlKey
                 }
             }
-        }
+        },
+        hooks: Hooks
     }
 )
 
