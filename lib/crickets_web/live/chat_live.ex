@@ -29,7 +29,7 @@ defmodule CricketsWeb.ChatLive do
       |> assign(:me, me)
       |> assign(:chats, %{}) # no chat history to start with
       |> assign(:currently_chatting_with, me)
-      |> assign(:outbound_message_count, 0)
+      |> assign(:outbound_message_count, 0) # a hack to clear out the just-submitted message from the textarea
       |> assign(:voicemail, %{}) # not a good name. messages_pending?
       |> assign(:friends, Presence.list(@online_users_presence_topic)) # TODO narrow to friends
     }
@@ -49,7 +49,7 @@ defmodule CricketsWeb.ChatLive do
                 phx-value-friend-name={"#{friend}"}
                 class="selected-friend"
               >
-                <%=if friend == @me, do: "Me", else: friend%>
+                <%=if friend == @me, do: "Me", else: friend%> 💬
               </div>
             <% Map.has_key?(@voicemail, friend) -> %>
               <div
@@ -57,10 +57,7 @@ defmodule CricketsWeb.ChatLive do
                 phx-value-friend-name={"#{friend}"}
                 class="unread-friend"
               >
-                <%=if friend == @me, do: "Me", else: friend%>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                </svg>
+                <%=if friend == @me, do: "Me", else: friend%> 💬
               </div>
             <% true -> %>
               <div
@@ -77,13 +74,9 @@ defmodule CricketsWeb.ChatLive do
         <%!-- Message Header --%>
         <%!-- Who you're talking to --%>
         <div
-          class={"#{if(@currently_chatting_with, do: "msg-header", else: "msg-header-inactive")}"}
+          class="msg-header"
         >
-          <%= if @currently_chatting_with do %>
-            Chatting with <%=if(@currently_chatting_with == @me, do: "myself", else: @currently_chatting_with)%>
-            <% else %>
-            Select a friend to chat with.
-          <% end %>
+          Chatting with <%=if(@currently_chatting_with == @me, do: "myself", else: @currently_chatting_with)%> ☺
         </div>
         <%!-- Message input --%>
         <div class="msg-input-container">
@@ -98,7 +91,7 @@ defmodule CricketsWeb.ChatLive do
         </div>
         <%!-- Conversations --%>
         <div
-          class={"#{if(@currently_chatting_with, do: "msg-page", else: "msg-page-inactive")}"}
+          class="msg-page"
         >
           <%= if @chats && @chats[@currently_chatting_with] do %>
             <%= for {chat, i} <- Enum.with_index(@chats[@currently_chatting_with]) do %>
@@ -123,7 +116,9 @@ defmodule CricketsWeb.ChatLive do
     """
   end
 
+  # Called when user tries to send a message.
   def handle_event("send-message", %{"shiftKey" => isShiftKeyPressed, "value" => message}, socket) do
+    # Shift + Enter allows the user to put a newline in the message.
     if !isShiftKeyPressed do
       chat_message = %ChatMessage{
         :from => socket.assigns.me,
@@ -143,7 +138,7 @@ defmodule CricketsWeb.ChatLive do
           :noreply,
           socket
           |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
-          |> handle_new_chat_message(chat_message)
+          |> handle_new_chat_message(chat_message) # don't want duplicate messages when chatting with yourself
         }
       else
         {
