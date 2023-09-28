@@ -83,6 +83,7 @@ defmodule CricketsWeb.ChatLive do
             <textarea
               id={"#{@outbound_message_count}"}
               name="messageInput"
+              placeholder="..."
               class="msg-input"
               phx-keydown="send-message"
               phx-key="Enter"

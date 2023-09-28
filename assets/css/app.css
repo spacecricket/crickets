@@ -98,9 +98,9 @@
 }
 
 .latest-message {
-    font-weight: 700;
-    border: 1px dotted white;
-    background-color: #fafafa;
+    font-weight: 800;
+    /* border: 1px dotted white; */
+    /* background-color: #fafafa; */
 }
 
 .msg-input-container {
