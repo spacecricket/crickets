@@ -110,7 +110,7 @@ defmodule CricketsWeb.ChatLive do
 
                 <%= for part <- String.split(chat.message, "\n") do %>
                   <%= part %>
-                  <br />
+                  <br
                 <% end %>
               </p>
             <% end %>
