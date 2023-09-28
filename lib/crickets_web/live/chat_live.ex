@@ -95,10 +95,10 @@ defmodule CricketsWeb.ChatLive do
         >
           <%= if @chats && @chats[@currently_chatting_with] do %>
             <%= for {chat, i} <- Enum.with_index(@chats[@currently_chatting_with]) do %>
-              <%= if i < 20 do %>
+              <%= if i < 10 do %>
                 <p
                   class={"#{if(chat.from == @me, do: "my-message", else: "friends-message")} #{if(i == 0, do: "latest-message")}"}
-                  style={"opacity: #{1.0 - i * 0.05}"}
+                  style={"opacity: #{1.0 - i * 0.1}"}
                 >
                   <%!-- <%=if(chat.from != @me, do: chat.from <> ": ")%> --%>
 
