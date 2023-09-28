@@ -11,7 +11,9 @@
 
 .friends-container {
     border: 1px solid #ccc;
-    min-width: 20%;
+    min-width: fit-content;
+    width: 25%;
+    flex-grow: 2;
     height: 100%;
     overflow-x: scroll;
 }
@@ -33,6 +35,16 @@
 
     color: black;
     background-color: aquamarine;
+}
+
+.unread-friend {
+    cursor: pointer;
+    border: 1px solid #ccc;
+    width: 100%;
+    font-weight: 600;
+
+    color: black;
+    background-color: beige;
 }
 
 .msg-container {

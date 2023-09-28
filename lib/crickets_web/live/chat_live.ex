@@ -1,8 +1,8 @@
 defmodule CricketsWeb.ChatLive do
   use CricketsWeb, :live_view
 
-  alias Crickets.ChatMessage
   alias CricketsWeb.Presence
+  alias Crickets.ChatMessage
 
   # Topic to track which users are online
   @online_users_presence_topic "crickets:online_users_presence_topic"
@@ -28,9 +28,12 @@ defmodule CricketsWeb.ChatLive do
       socket
       |> assign(:me, me)
       |> assign(:chats, %{}) # no chat history to start with
-      |> assign(:currently_chatting_with, nil)
+      |> assign(:currently_chatting_with, me)
+      |> assign(:outbound_message_count, 0)
+      |> assign(:voicemail, %{}) # not a good name. messages_pending?
       |> assign(:friends, Presence.list(@online_users_presence_topic)) # TODO narrow to friends
-    }  end
+    }
+  end
 
   def render(assigns) do
     ~H"""
@@ -39,13 +42,35 @@ defmodule CricketsWeb.ChatLive do
       <%!-- Friends --%>
       <div class="friends-container">
         <%= for friend <- Map.keys(@friends) do %>
-          <div
-            phx-click="friend-clicked"
-            phx-value-friend-name={"#{friend}"}
-            class={"#{if(friend == @currently_chatting_with, do: "selected-friend", else: "friend")}"}
-          >
-            <%=friend%>
-          </div>
+          <%= cond do %>
+            <% friend == @currently_chatting_with -> %>
+              <div
+                phx-click="friend-clicked"
+                phx-value-friend-name={"#{friend}"}
+                class="selected-friend"
+              >
+                <%=if friend == @me, do: "Me", else: friend%>
+              </div>
+            <% Map.has_key?(@voicemail, friend) -> %>
+              <div
+                phx-click="friend-clicked"
+                phx-value-friend-name={"#{friend}"}
+                class="unread-friend"
+              >
+                <%=if friend == @me, do: "Me", else: friend%>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                </svg>
+              </div>
+            <% true -> %>
+              <div
+                phx-click="friend-clicked"
+                phx-value-friend-name={"#{friend}"}
+                class="friend"
+              >
+                <%=if friend == @me, do: "Me", else: friend%>
+              </div>
+          <% end %>
         <% end %>
       </div>
       <%!-- Message Header --%>
@@ -77,14 +102,45 @@ defmodule CricketsWeb.ChatLive do
         </div>
         <%!-- Message input --%>
         <div class="msg-input-container">
-          <form phx-submit="new-message-submitted">
-            <textarea name="messageInput" />
-            <button type="submit">Go</button>
-          </form>
+            <textarea
+              id={"#{@outbound_message_count}"}
+              name="messageInput"
+              class="msg-input"
+              phx-keydown="send-message"
+              phx-key="Enter"
+            />
         </div>
       </div>
     </div>
     """
+  end
+
+  def handle_event("send-message", %{"ctrlKey" => ctrlKey, "metaKey" => metaKey, "value" => message}, socket) do
+    if ctrlKey || metaKey do
+      chat_message = %ChatMessage{
+        :from => socket.assigns.me,
+        :to => socket.assigns.currently_chatting_with,
+        :message => message,
+        :at => DateTime.utc_now()
+      }
+
+      if chat_message.from != chat_message.to do
+        CricketsWeb.Endpoint.broadcast!(
+          chat_message.to,
+          "new_msg",
+          Jason.encode!(chat_message)
+        )
+      end
+
+      {
+        :noreply,
+        socket
+        |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
+        |> handle_new_chat_message(chat_message)
+      }
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("friend-clicked", %{"friend-name" => friend}, socket) do
@@ -92,33 +148,9 @@ defmodule CricketsWeb.ChatLive do
       :noreply,
       socket
       |> assign(:currently_chatting_with, friend)
+      |> update(:voicemail, fn _ -> Map.delete(socket.assigns.voicemail, friend) end)
     }
   end
-
-  def handle_event("new-message-submitted", %{"messageInput" => message}, socket) do
-    chat_message = %ChatMessage{
-      :from => socket.assigns.me,
-      :to => socket.assigns.currently_chatting_with,
-      :message => message,
-      :at => DateTime.utc_now()
-    }
-
-    if chat_message.from != chat_message.to do
-      CricketsWeb.Endpoint.broadcast!(
-        chat_message.to,
-        "new_msg",
-        Jason.encode!(chat_message)
-      )
-    end
-
-    {
-      :noreply,
-      socket
-      |> handle_new_chat_message(chat_message)
-    }
-  end
-
-  # TODO add handle_event to update socket.assigns[:to]
 
   def handle_info(%Phoenix.Socket.Broadcast{event: "new_msg", payload: payload}, socket) do
     chat_message = Jason.decode!(payload)
@@ -146,8 +178,6 @@ defmodule CricketsWeb.ChatLive do
   end
 
   defp handle_new_chat_message(socket, chat_message = %ChatMessage{}) do
-    IO.inspect(chat_message)
-
     chatting_with = if(chat_message.to == socket.assigns.me, do: chat_message.from, else: chat_message.to)
 
     chats = if Map.has_key?(socket.assigns.chats, chatting_with) do
@@ -156,7 +186,14 @@ defmodule CricketsWeb.ChatLive do
       Map.put(socket.assigns.chats, chatting_with, [chat_message])
     end
 
-    update(socket, :chats, fn _ -> chats end)
+    voicemail = if chatting_with != socket.assigns.currently_chatting_with do
+      Map.put(socket.assigns.voicemail, chatting_with, true)
+    else
+      socket.assigns.voicemail
+    end
+
+    socket = update(socket, :chats, fn _ -> chats end)
+    update(socket, :voicemail, fn _ -> voicemail end)
   end
 
   defp handle_joins(socket, joins) do
