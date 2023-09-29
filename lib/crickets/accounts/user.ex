@@ -4,6 +4,8 @@ defmodule Crickets.Accounts.User do
 
   schema "users" do
     field :email, :string
+    field :first_name, :string
+    field :last_name, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -38,6 +40,7 @@ defmodule Crickets.Accounts.User do
     user
     |> cast(attrs, [:email, :password])
     |> validate_email(opts)
+    |> validate_name(opts)
     |> validate_password(opts)
   end
 
@@ -47,6 +50,14 @@ defmodule Crickets.Accounts.User do
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
     |> validate_length(:email, max: 160)
     |> maybe_validate_unique_email(opts)
+  end
+
+  defp validate_name(changeset, _opts) do
+    changeset
+    |> validate_required([:first_name])
+    |> validate_required([:last_name])
+    |> validate_length(:first_name, max: 20)
+    |> validate_length(:last_name, max: 20)
   end
 
   defp validate_password(changeset, opts) do
