@@ -4,8 +4,7 @@ defmodule Crickets.Accounts.User do
 
   schema "users" do
     field :email, :string
-    field :first_name, :string
-    field :last_name, :string
+    field :handle, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
     field :confirmed_at, :naive_datetime
@@ -35,12 +34,18 @@ defmodule Crickets.Accounts.User do
       using this changeset for validations on a LiveView form before
       submitting the form), this option can be set to `false`.
       Defaults to `true`.
+
+    * `:validate_handle` - Validates the uniqueness of the handle, in case
+      you don't want to validate the uniqueness of the handle (like when
+      using this changeset for validations on a LiveView form before
+      submitting the form), this option can be set to `false`.
+      Defaults to `true`.
   """
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:email, :password])
+    |> cast(attrs, [:email, :handle, :password])
     |> validate_email(opts)
-    |> validate_name(opts)
+    |> validate_handle(opts)
     |> validate_password(opts)
   end
 
@@ -52,12 +57,12 @@ defmodule Crickets.Accounts.User do
     |> maybe_validate_unique_email(opts)
   end
 
-  defp validate_name(changeset, _opts) do
+  defp validate_handle(changeset, opts) do
     changeset
-    |> validate_required([:first_name])
-    |> validate_required([:last_name])
-    |> validate_length(:first_name, max: 20)
-    |> validate_length(:last_name, max: 20)
+    |> validate_required([:handle])
+    |> validate_format(:handle, ~r/[a-z]+_?[a-z]+$/, message: "must lowercase words optionally separated by underscores. Eg. 'jiminy' or 'jiminy_cricket'")
+    |> validate_length(:handle, min: 3, max: 25)
+    |> maybe_validate_unique_handle(opts)
   end
 
   defp validate_password(changeset, opts) do
@@ -93,6 +98,16 @@ defmodule Crickets.Accounts.User do
       changeset
       |> unsafe_validate_unique(:email, Crickets.Repo)
       |> unique_constraint(:email)
+    else
+      changeset
+    end
+  end
+
+  defp maybe_validate_unique_handle(changeset, opts) do
+    if Keyword.get(opts, :validate_handle, true) do
+      changeset
+      |> unsafe_validate_unique(:handle, Crickets.Repo)
+      |> unique_constraint(:handle)
     else
       changeset
     end

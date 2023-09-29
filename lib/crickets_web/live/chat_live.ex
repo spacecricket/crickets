@@ -8,7 +8,7 @@ defmodule CricketsWeb.ChatLive do
   @online_users_presence_topic "crickets:online_users_presence_topic"
 
   def mount(_params, _session, socket) do
-    me = socket.assigns.current_user.email
+    me = socket.assigns.current_user.handle || socket.assigns.current_user.email
 
     # Track me so that my friends can see when I'm online.
     Presence.track(
