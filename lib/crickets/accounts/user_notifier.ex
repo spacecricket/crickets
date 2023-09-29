@@ -8,7 +8,7 @@ defmodule Crickets.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Crickets", "noreply@crickets.space"})
+      |> from({"Jatin S", "jatins@hey.com"})
       |> subject(subject)
       |> text_body(body)
 
