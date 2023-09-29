@@ -6,7 +6,7 @@ This is a basic chat app that allowed me to play with Presence
 and the provided Phoenix.PubSub mechanism.
 
 TODO:
-* Add first and last names, and maybe Avatars.
+* Add Avatars.
 * Add support for links and emojis. Maybe images/attachments too.
 
 ## To start your Phoenix server:
