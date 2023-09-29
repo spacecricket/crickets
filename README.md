@@ -6,7 +6,6 @@ This is a basic chat app that allowed me to play with Presence
 and the provided Phoenix.PubSub mechanism.
 
 TODO:
-* Fix the email provider for user registration -- I'm thinking of using MailJet.
 * Add first and last names, and maybe Avatars.
 * Add support for links and emojis. Maybe images/attachments too.
 
