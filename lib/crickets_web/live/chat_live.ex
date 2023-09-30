@@ -274,6 +274,8 @@ defmodule CricketsWeb.ChatLive do
       key:  socket.assigns.me,
       data: serialize_to_token(chats) # TODO we ought to version this data
     }) # TODO ideally this goes into a liveview lifecycle hook just before the process is killed
+    # But.. "Note: only :after_render hooks are currently supported in LiveComponents."
+    # https://hexdocs.pm/phoenix_live_view/Phoenix.LiveView.html#attach_hook/4
   end
 
   defp restore_from_token(token) do
