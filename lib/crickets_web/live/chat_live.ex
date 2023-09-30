@@ -170,12 +170,11 @@ defmodule CricketsWeb.ChatLive do
     }
   end
 
-  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff", payload: diff}, socket) do
+  def handle_info(%Phoenix.Socket.Broadcast{event: "presence_diff"}, socket) do
     {
       :noreply,
       socket
-      |> handle_leaves(diff.leaves)
-      |> handle_joins(diff.joins)
+      |> assign(:friends, Presence.list(@online_users_presence_topic)) # TODO narrow to friends
     }
   end
 
@@ -197,17 +196,4 @@ defmodule CricketsWeb.ChatLive do
     socket = update(socket, :chats, fn _ -> chats end)
     update(socket, :voicemail, fn _ -> voicemail end)
   end
-
-  defp handle_joins(socket, joins) do
-    Enum.reduce(joins, socket, fn {user, %{metas: [meta| _]}}, socket ->
-      assign(socket, :friends, Map.put(socket.assigns.friends, user, meta))
-    end)
-  end
-
-  defp handle_leaves(socket, leaves) do
-    Enum.reduce(leaves, socket, fn {user, _}, socket ->
-      assign(socket, :friends, Map.delete(socket.assigns.friends, user))
-    end)
-  end
-
 end
