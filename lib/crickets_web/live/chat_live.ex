@@ -205,7 +205,7 @@ defmodule CricketsWeb.ChatLive do
           socket
           |> assign(:chats, restored) # TODO actually merge the chats
 
-        {:error, reason} ->
+        {:error, _reason} ->
           # Clear the token so it doesn't keep showing an error.
           socket
           |> clear_browser_storage()
