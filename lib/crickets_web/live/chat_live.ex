@@ -108,17 +108,17 @@ defmodule CricketsWeb.ChatLive do
       </div>
       <div class="msg-container">
         <%!-- Message input --%>
-        <div class="msg-input-container">
-            <textarea
-              id={"#{@outbound_message_count}"}
-              name="messageInput"
-              placeholder=".."
-              class="msg-input"
-              phx-keydown="send-message"
-              phx-key="Enter"
-              phx-hook="Focus"
-            />
-        </div>
+        <form phx-submit="send-message-click" class="msg-input-container">
+          <textarea
+            id={"#{@outbound_message_count}"}
+            name="messageInput"
+            class="msg-input"
+            phx-keydown="send-message"
+            phx-key="Enter"
+            phx-hook="Focus"
+          />
+          <button type="submit" class="msg-send-button">Send</button>
+        </form>
         <%!-- Conversations --%>
         <div
           class="msg-page"
@@ -144,40 +144,16 @@ defmodule CricketsWeb.ChatLive do
     """
   end
 
+  # Invoked when the user clicks `Send`.
+  @impl true
+  def handle_event("send-message-click", %{"messageInput" => message}, socket) do
+    {:noreply, send_message(message, socket)}
+  end
 
   # Invoked when the user hits `Enter` in the chat box.
   @impl true
-  def handle_event("send-message", %{"shiftKey" => isShiftKeyPressed, "value" => message}, socket) do
-    # Shift + Enter allows the user to put a newline in the message.
-    if !isShiftKeyPressed do
-      chat_message = %ChatMessage{
-        :from => socket.assigns.me,
-        :to => socket.assigns.currently_chatting_with,
-        :message => message,
-        :at => DateTime.utc_now()
-      }
-
-      # Send the chat out to the recipient
-      CricketsWeb.Endpoint.broadcast!(chat_message.to, "chat", Jason.encode!(chat_message))
-
-      if chat_message.from != chat_message.to do
-        {
-          :noreply,
-          socket
-          |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
-          |> handle_new_chat_message(chat_message) # don't want duplicate messages when chatting with yourself
-        }
-      else
-        {
-          :noreply,
-          socket
-          |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
-        }
-      end
-
-    else
-      {:noreply, socket}
-    end
+  def handle_event("send-message", %{"value" => message}, socket) do
+    {:noreply, send_message(message, socket)}
   end
 
 
@@ -249,6 +225,32 @@ defmodule CricketsWeb.ChatLive do
       socket
       |> assign(:friends, Presence.list(@online_users_presence_topic)) # TODO this will get expensive as number of users increases
     }
+  end
+
+
+  defp send_message(message, socket) do
+    if String.length(message) == 0 do
+      socket
+    else
+      chat_message = %ChatMessage{
+        :from => socket.assigns.me,
+        :to => socket.assigns.currently_chatting_with,
+        :message => message,
+        :at => DateTime.utc_now()
+      }
+
+      # Send the chat out to the recipient
+      CricketsWeb.Endpoint.broadcast!(chat_message.to, "chat", Jason.encode!(chat_message))
+
+      if chat_message.from != chat_message.to do
+        socket
+        |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
+        |> handle_new_chat_message(chat_message) # don't want duplicate messages when chatting with yourself
+      else
+        socket
+        |> assign(:outbound_message_count, 1 + socket.assigns.outbound_message_count)
+      end
+    end
   end
 
 

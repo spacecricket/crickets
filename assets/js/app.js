@@ -58,14 +58,6 @@ let liveSocket = new LiveSocket(
     Socket, 
     {
         params: {_csrf_token: csrfToken},
-        metadata: {
-            keydown: (event, element) => {
-                return {
-                    shiftKey: event.shiftKey
-                    // metaKey: event.metaKey
-                }
-            }
-        },
         hooks: Hooks
     }
 )
