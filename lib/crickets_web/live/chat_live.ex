@@ -128,7 +128,7 @@ defmodule CricketsWeb.ChatLive do
               <%= if i < 100 do %>
                 <p
                   class={"#{if(chat.from == @me, do: "my-message", else: "friends-message")} #{if(i == 0, do: "latest-message")}"}
-                  xstyle={"opacity: #{1.0 - i * 0.01}"}
+                  style={"opacity: #{1.0 - i * 0.01}"}
                 >
                   <%= for part <- String.split(chat.message, "\n") do %>
                     <%= part %>
